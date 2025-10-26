@@ -1,3 +1,5 @@
+Note: originally forked from https://github.com/erikdelange/Reinforcement-Learning-Maze
+
 ### Escape from a maze using reinforcement learning
 
 ##### Solving an optimization problem using an MDP and TD learning
@@ -26,15 +28,5 @@ Package *models* contains the following models:
 4. *QTableTraceModel* is an extension of the QTableModel. It speeds up learning by keeping track of previously visited state-action pairs, and updates their values as well although with a decaying rate.
 5. *SarsaTableTraceModel* is a variant of SarsaTableModel but adds an eligibility trace, just as QTableTraceModel. 
 6. *QReplayNetworkModel* is a simple neural network which learns the relation between a state and the corresponding values by replaying previous moves. It is significantly slower than all other models, and an overkill for a problem with such a small state space. As an extra feature after learning it saves the model to disk so this can be loaded later for a next game. This is typically how you would use a neural network in a real world situation where training is separated from actual use. 
-
-The table below gives an impression of the relative performance of each of these models (on my PC):
-
-| Model | Trained | Average no of episodes | Average training time |
-| --- | --- | --- | --- | 
-| QTableModel | 10 times | 149.5 | 16.5 sec |
-| QTableTraceModel | 10 times | 87.0 | 5.2 sec |
-| SarsaTableModel | 10 times | 114.0 | 11.7 sec |
-| SarsaTableTraceModel | 10 times | 73.0 | 5.5 sec |
-| QReplayNetworkModel | 10 times | 113.5 | 4 min 48 sec |
 
 Requires matplotlib, numpy, keras and tensorflow.
