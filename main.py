@@ -15,6 +15,7 @@ logging.basicConfig(format="%(levelname)-8s: %(asctime)s: %(message)s",
 class Test(Enum):
     SHOW_MAZE_ONLY = auto()
     RANDOM_MODEL = auto()
+    VALUE_ITERATION = auto()
     Q_LEARNING = auto()
     Q_ELIGIBILITY = auto()
     SARSA = auto()
@@ -25,7 +26,7 @@ class Test(Enum):
     SPEED_TEST_2 = auto()
 
 
-test = Test.SARSA_ELIGIBILITY # which test to run
+test = Test.VALUE_ITERATION # which test to run
 
 maze = np.array([
     [0, 1, 0, 0, 0, 0, 0, 0],
@@ -50,6 +51,12 @@ if test == Test.RANDOM_MODEL:
     game.render(Render.MOVES)
     model = models.RandomModel(game)
     game.play(model, start_cell=(0, 0))
+
+# plan using value iteration
+if test == Test.VALUE_ITERATION:
+    game.render(Render.TRAINING)
+    model = models.ValueIterationModel(game)
+    h, w, _, _ = model.train(discount=0.90, theta=1e-4, max_iterations=1000)
 
 # train using tabular Q-learning
 if test == Test.Q_LEARNING:
@@ -91,9 +98,13 @@ try:
     h  # force a NameError exception if h does not exist, and thus don't try to show win rate and cumulative reward
     fig, (ax1, ax2) = plt.subplots(2, 1, tight_layout=True)
     fig.canvas.manager.set_window_title(model.name)
-    ax1.plot(*zip(*w))
-    ax1.set_xlabel("episode")
-    ax1.set_ylabel("win rate")
+    if w:
+        ax1.plot(*zip(*w))
+        ax1.set_xlabel("episode")
+        ax1.set_ylabel("win rate")
+    else:
+        ax1.set_axis_off()
+        ax1.text(0.5, 0.5, "win rate unavailable", ha="center", va="center", transform=ax1.transAxes)
     ax2.plot(h)
     ax2.set_xlabel("episode")
     ax2.set_ylabel("cumulative reward")
