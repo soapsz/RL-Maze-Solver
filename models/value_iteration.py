@@ -36,18 +36,26 @@ class ValueIterationModel(AbstractModel):
             delta = 0.0
             for state in self._states:
                 if state == self._exit_cell:
+                    for action in self.environment.actions:
+                        self.Q[(state, action)] = 0.0
                     continue
 
                 old_value = self.V[state]
                 q_values = self._state_action_values(state, discount)
                 best_value = np.max(q_values) if q_values.size > 0 else 0.0
                 self.V[state] = best_value
+
+                for idx, action in enumerate(self.environment.actions):
+                    self.Q[(state, action)] = q_values[idx]
+
                 delta = max(delta, abs(old_value - best_value))
 
             delta_history.append(delta)
             iterations = iteration
             logging.info("iteration: {:d}/{:d} | delta: {:.6f}"
                          .format(iteration, max_iterations, delta))
+
+            self.environment.render_q(self)
 
             if delta < theta:
                 break
