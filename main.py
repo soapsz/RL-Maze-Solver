@@ -15,6 +15,7 @@ logging.basicConfig(format="%(levelname)-8s: %(asctime)s: %(message)s",
 class Test(Enum):
     SHOW_MAZE_ONLY = auto()
     RANDOM_MODEL = auto()
+    VALUE_ITERATION = auto()
     Q_LEARNING = auto()
     Q_ELIGIBILITY = auto()
     SARSA = auto()
@@ -25,7 +26,7 @@ class Test(Enum):
     SPEED_TEST_2 = auto()
 
 
-test = Test.SARSA_ELIGIBILITY # which test to run
+test = Test.Q_LEARNING # which test to run
 
 maze = np.array([
     [0, 1, 0, 0, 0, 0, 0, 0],
@@ -36,6 +37,17 @@ maze = np.array([
     [0, 0, 0, 1, 0, 1, 1, 1],
     [0, 1, 1, 0, 0, 0, 0, 0],
     [0, 0, 0, 0, 0, 1, 0, 0]
+])  # 0 = free, 1 = occupied
+
+maze = np.array([
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0]
 ])  # 0 = free, 1 = occupied
 
 game = Maze(maze)
@@ -51,6 +63,12 @@ if test == Test.RANDOM_MODEL:
     model = models.RandomModel(game)
     game.play(model, start_cell=(0, 0))
 
+# plan using value iteration
+if test == Test.VALUE_ITERATION:
+    game.render(Render.TRAINING)
+    model = models.ValueIterationModel(game)
+    h, w, _, _ = model.train(discount=0.90, theta=1e-4, max_iterations=1000)
+
 # train using tabular Q-learning
 if test == Test.Q_LEARNING:
     game.render(Render.TRAINING)
@@ -60,40 +78,44 @@ if test == Test.Q_LEARNING:
 
 # train using tabular Q-learning and an eligibility trace (aka TD-lambda)
 if test == Test.Q_ELIGIBILITY:
-    game.render(Render.TRAINING)
+    game.render(Render.NOTHING)
     model = models.QTableTraceModel(game)
     h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # train using tabular SARSA learning
 if test == Test.SARSA:
-    game.render(Render.TRAINING)
+    game.render(Render.NOTHING)
     model = models.SarsaTableModel(game)
     h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # train using tabular SARSA learning and an eligibility trace
 if test == Test.SARSA_ELIGIBILITY:
-    game.render(Render.TRAINING)  # shows all moves and the q table; nice but slow.
+    game.render(Render.NOTHING)  # shows all moves and the q table; nice but slow.
     model = models.SarsaTableTraceModel(game)
     h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
-# train using a neural network with experience replay (also saves the resulting model)
-if test == Test.DEEP_Q:
-    game.render(Render.TRAINING)
-    model = models.QReplayNetworkModel(game)
-    h, w, _, _ = model.train(discount=0.80, exploration_rate=0.10, episodes=maze.size * 10, max_memory=maze.size * 4,
-                             stop_at_convergence=True)
+# # train using a neural network with experience replay (also saves the resulting model)
+# if test == Test.DEEP_Q:
+#     game.render(Render.NOTHING)
+#     model = models.QReplayNetworkModel(game)
+#     h, w, _, _ = model.train(discount=0.80, exploration_rate=0.10, episodes=maze.size * 10, max_memory=maze.size * 4,
+#                              stop_at_convergence=True)
 
 # draw graphs showing development of win rate and cumulative rewards
 try:
     h  # force a NameError exception if h does not exist, and thus don't try to show win rate and cumulative reward
     fig, (ax1, ax2) = plt.subplots(2, 1, tight_layout=True)
     fig.canvas.manager.set_window_title(model.name)
-    ax1.plot(*zip(*w))
-    ax1.set_xlabel("episode")
-    ax1.set_ylabel("win rate")
+    if w:
+        ax1.plot(*zip(*w))
+        ax1.set_xlabel("episode")
+        ax1.set_ylabel("win rate")
+    else:
+        ax1.set_axis_off()
+        ax1.text(0.5, 0.5, "win rate unavailable", ha="center", va="center", transform=ax1.transAxes)
     ax2.plot(h)
     ax2.set_xlabel("episode")
     ax2.set_ylabel("cumulative reward")
