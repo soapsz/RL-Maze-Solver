@@ -25,9 +25,9 @@ class Test(Enum):
     SPEED_TEST_1 = auto()
     SPEED_TEST_2 = auto()
 
-test = Test.VALUE_ITERATION # which test to run
+test = Test.Q_ELIGIBILITY # which test to run
 
-mazeType = "normal18" # maze types
+mazeType = "blank8" # maze types
 
 if mazeType == "normal8":
     maze = np.array([
