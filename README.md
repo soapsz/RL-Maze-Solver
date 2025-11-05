@@ -22,11 +22,10 @@ This project demonstrates different models which learn to move through a maze. C
 ![Maze](https://github.com/erikdelange/Reinforcement-Learning-Maze/blob/master/bestmove.png)
 
 Package *models* contains the following models:
-1. *RandomModel* is the simplest model and just selects the next move randomly. It is [dumb all over](https://www.youtube.com/watch?v=DR_wf92A8E4) and learns nothing. You are lucky if you get to the exit using this model.
-2. *QTableModel* uses a table to record the value of each (state, action) pair. For a state the highest value indicates the most desirable action. These values are constantly refined during training. This is a fast way to learn a policy.
-3. *SarsaTableModel* uses a similar setup as the previous model, but takes less risk during learning (= on-policy learning).
-4. *QTableTraceModel* is an extension of the QTableModel. It speeds up learning by keeping track of previously visited state-action pairs, and updates their values as well although with a decaying rate.
-5. *SarsaTableTraceModel* is a variant of SarsaTableModel but adds an eligibility trace, just as QTableTraceModel. 
-6. *QReplayNetworkModel* is a simple neural network which learns the relation between a state and the corresponding values by replaying previous moves. It is significantly slower than all other models, and an overkill for a problem with such a small state space. As an extra feature after learning it saves the model to disk so this can be loaded later for a next game. This is typically how you would use a neural network in a real world situation where training is separated from actual use. 
+1. *QTableModel* uses a table to record the value of each (state, action) pair. For a state the highest value indicates the most desirable action. These values are constantly refined during training. This is a fast way to learn a policy.
+2. *SarsaTableModel* uses a similar setup as the previous model, but takes less risk during learning (= on-policy learning).
+3. *QTableTraceModel* is an extension of the QTableModel. It speeds up learning by keeping track of previously visited state-action pairs, and updates their values as well although with a decaying rate.
+4. *SarsaTableTraceModel* is a variant of SarsaTableModel but adds an eligibility trace, just as QTableTraceModel. 
+5. *ValueIteration* repeatedly calculates V using the Bellman equation until convergence on the solution or it reaches a pre-determined number of iterations.
 
 Requires matplotlib, numpy, keras and tensorflow.
