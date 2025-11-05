@@ -25,9 +25,9 @@ class Test(Enum):
     SPEED_TEST_1 = auto()
     SPEED_TEST_2 = auto()
 
-test = Test.Q_LEARNING # which test to run
+test = Test.VALUE_ITERATION # which test to run
 
-mazeType = "blank8" # maze types
+mazeType = "normal18" # maze types
 
 if mazeType == "normal8":
     maze = np.array([
@@ -132,7 +132,7 @@ if test == Test.Q_ELIGIBILITY:
 if test == Test.SARSA:
     game.render(Render.NOTHING)
     model = models.SarsaTableModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
+    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=300,
                              stop_at_convergence=True)
 
 # train using tabular SARSA learning and an eligibility trace
