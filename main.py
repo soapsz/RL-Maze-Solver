@@ -25,7 +25,7 @@ class Test(Enum):
     SPEED_TEST_1 = auto()
     SPEED_TEST_2 = auto()
 
-test = Test.Q_ELIGIBILITY # which test to run
+test = Test.Q_LEARNING # which test to run
 
 mazeType = "blank8" # maze types
 
