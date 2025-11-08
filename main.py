@@ -20,9 +20,9 @@ class Test(Enum):
     SARSA = auto()
     SARSA_ELIGIBILITY = auto()
 
-test = Test.VALUE_ITERATION # which test to run
+test = Test.Q_ELIGIBILITY # which test to run
 
-mazeType = "normal8" # maze types
+mazeType = "blank18" # maze types
 
 if mazeType == "normal8":
     maze = np.array([
@@ -101,34 +101,34 @@ if test == Test.SHOW_MAZE_ONLY:
 if test == Test.VALUE_ITERATION:
     game.render(Render.TRAINING)
     model = models.ValueIterationModel(game)
-    h, w, _, _ = model.train(discount=0.90, theta=1e-4, max_iterations=1000)
+    h, w, _, _ = model.train(discount=0.90, theta=1e-4, max_iterations=200)
 
 # train using tabular Q-learning
 if test == Test.Q_LEARNING:
     game.render(Render.TRAINING)
     model = models.QTableModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=100,
+    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # train using tabular Q-learning and an eligibility trace (aka TD-lambda)
 if test == Test.Q_ELIGIBILITY:
     game.render(Render.TRAINING)
     model = models.QTableTraceModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=100,
+    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # train using tabular SARSA learning
 if test == Test.SARSA:
     game.render(Render.TRAINING)
     model = models.SarsaTableModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=100,
+    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # train using tabular SARSA learning and an eligibility trace
 if test == Test.SARSA_ELIGIBILITY:
     game.render(Render.TRAINING)  # shows all moves and the q table; nice but slow.
     model = models.SarsaTableTraceModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=100,
+    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # draw graphs showing development of win rate and cumulative rewards
