@@ -57,10 +57,10 @@ class Maze:
     # penalty_impossible_move = -0.75  # penalty for trying to enter an occupied cell or moving out of the maze
 
     # 18 x 18
-    reward_exit = 100.0  # reward for reaching the exit cell
-    penalty_move = -1  # penalty for a move which did not result in finding the exit cell
-    penalty_visited = -5  # penalty for returning to a cell which was visited earlier
-    penalty_impossible_move = -10  # penalty for trying to enter an occupied cell or moving out of the maze
+    reward_exit = 10.0  # reward for reaching the exit cell
+    penalty_move = -0.1  # penalty for a move which did not result in finding the exit cell
+    penalty_visited = -0.5  # penalty for returning to a cell which was visited earlier
+    penalty_impossible_move = -1  # penalty for trying to enter an occupied cell or moving out of the maze
 
     def __init__(self, maze, start_cell=(0, 0), exit_cell=None):
         """ Create a new maze game.
