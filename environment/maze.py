@@ -92,6 +92,10 @@ class Maze:
 
         self.reset(start_cell)
 
+    @property
+    def goal(self):
+        return self.__exit_cell
+
     def reset(self, start_cell=(0, 0)):
         """ Reset the maze to its initial state and place the agent at start_cell.
 
