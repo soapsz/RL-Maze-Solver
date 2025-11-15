@@ -52,17 +52,26 @@ class QTableTraceModel(AbstractModel):
         eligibility_decay = kwargs.get("eligibility_decay", 0.80)  # = 20% reduction
         episodes = max(kwargs.get("episodes", 1000), 1)
         check_convergence_every = kwargs.get("check_convergence_every", self.default_check_convergence_every)
+        epsilon_min = 0.02
 
         # variables for reporting purposes
-        cumulative_reward = 0
         cumulative_reward_history = []
         win_history = []
+        metrics = []
+        cumulative_steps = 0
 
         start_list = list()
         start_time = datetime.now()
 
         # training starts here
         for episode in range(1, episodes + 1):
+            
+            # add counters for metrics
+            steps = 0
+            explore_count = 0
+            greedy_count = 0
+            episode_reward = 0.0
+
             # optimization: make sure to start from all possible cells
             if not start_list:
                 start_list = self.environment.empty.copy()
@@ -75,10 +84,15 @@ class QTableTraceModel(AbstractModel):
             etrace = dict()
 
             while True:
+                steps += 1
+                cumulative_steps += 1
+
                 if np.random.random() < exploration_rate:
                     action = random.choice(self.environment.actions)
+                    explore_count += 1
                 else:
                     action = self.predict(state)
+                    greedy_count += 1
 
                 try:
                     etrace[(state, action)] += 1
@@ -88,7 +102,7 @@ class QTableTraceModel(AbstractModel):
                 next_state, reward, status = self.environment.step(action)
                 next_state = tuple(next_state.flatten())
 
-                cumulative_reward += reward
+                episode_reward += reward
 
                 if (state, action) not in self.Q.keys():  # ensure value exists for (state, action) to avoid a KeyError
                     self.Q[(state, action)] = 0.0
@@ -99,6 +113,9 @@ class QTableTraceModel(AbstractModel):
                 delta = reward + discount * max_next_Q - self.Q[(state, action)]
 
                 for key in etrace.keys():
+                    # Ensure Q-value exists before update
+                    if key not in self.Q:
+                        self.Q[key] = 0.0
                     self.Q[key] += learning_rate * delta * etrace[key]
 
                 # decay eligibility trace
@@ -112,7 +129,19 @@ class QTableTraceModel(AbstractModel):
 
                 self.environment.render_q(self)
 
-            cumulative_reward_history.append(cumulative_reward)
+            cumulative_reward_history.append(episode_reward)
+
+            # Store metrics
+            metrics.append({
+                "episode": episode,
+                "return_": episode_reward,
+                "steps": steps,
+                "success": int(status == Status.WIN),
+                "epsilon": exploration_rate,
+                "explore_count": explore_count,
+                "greedy_count": greedy_count,
+                "cumulative_steps": cumulative_steps,
+            })
 
             logging.info("episode: {:d}/{:d} | status: {:4s} | e: {:.5f}"
                          .format(episode, episodes, status.name, exploration_rate))
@@ -126,11 +155,11 @@ class QTableTraceModel(AbstractModel):
                     logging.info("won from all start cells, stop learning")
                     break
 
-            exploration_rate *= exploration_decay  # explore less as training progresses
+            exploration_rate = max(epsilon_min, exploration_rate * exploration_decay)  # explore less as training progresses
 
         logging.info("episodes: {:d} | time spent: {}".format(episode, datetime.now() - start_time))
 
-        return cumulative_reward_history, win_history, episode, datetime.now() - start_time
+        return cumulative_reward_history, win_history, episode, datetime.now() - start_time, metrics
 
     def q(self, state):
         """ Get q values for all actions for a certain state. """

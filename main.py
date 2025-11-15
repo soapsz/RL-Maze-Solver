@@ -25,8 +25,16 @@ class Test(Enum):
     Q_LEARNING_COMPARISON = auto()
     DYNA_Q_VS_QL_STATIC = auto() # For Dyna-Q comparison with Q-Learning with static maze
     DYNA_Q_VS_QL_DYNAMIC = auto() # For Dyna-Q comparison with Q-Learning with dynamic maze
+    # ALL_MODELS_DYNAMIC_TEST = auto() # <-- This is now REMOVED
+    
+    # --- New individual dynamic tests ---
+    Q_LEARNING_DYNAMIC = auto()
+    DYNA_Q_DYNAMIC = auto()
+    SARSA_DYNAMIC = auto()
+    Q_TRACE_DYNAMIC = auto()
+    SARSA_TRACE_DYNAMIC = auto()
 
-test = Test.Q_ELIGIBILITY # which test to run
+test = Test.SARSA_TRACE_DYNAMIC # which test to run
 
 mazeType = "blank18" # maze types
 
@@ -131,21 +139,21 @@ if test == Test.Q_LEARNING:
 if test == Test.Q_ELIGIBILITY:
     game.render(Render.TRAINING)
     model = models.QTableTraceModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
+    h, w, _, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # train using tabular SARSA learning
 if test == Test.SARSA:
     game.render(Render.TRAINING)
     model = models.SarsaTableModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
+    h, w, _, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
 
 # train using tabular SARSA learning and an eligibility trace
 if test == Test.SARSA_ELIGIBILITY:
     game.render(Render.TRAINING)  # shows all moves and the q table; nice but slow.
     model = models.SarsaTableTraceModel(game)
-    h, w, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
+    h, w, _, _, _ = model.train(discount=0.90, exploration_rate=0.10, learning_rate=0.10, episodes=200,
                              stop_at_convergence=True)
     
 ## --- NEW TEST SETUP SECTION HERE
@@ -348,28 +356,189 @@ if test == Test.DYNA_Q_VS_QL_DYNAMIC:
     # rec_dq = recovery_episodes(dq_returns, episodes_before_change)
     # print("Episodes to 95% recovery  |  Q-Learning:", rec_q, "  Dyna-Q:", rec_dq)
 
+
+# --- Helper function for individual dynamic tests ---
+def run_dynamic_test(model_class, model_name, **kwargs):
+    
+    # --- Model Initialization ---
+    model = model_class(Maze(dynamic_game1.maze.copy()))
+    
+    metrics_before = {}
+    metrics_after = {}
+    
+    episodes_before_change = 150
+    episodes_after_change = 150
+    n_planning = kwargs.get("n_planning", 30) # For Dyna-Q
+
+    # --- Phase 1: Train on static maze ---
+    print(f"--- Phase 1: Training {model_name} on Original Maze ---")
+    model.environment.render(Render.NOTHING)
+    
+    train_kwargs = dict(
+        discount=0.9, exploration_rate=0.1, learning_rate=0.1,
+        episodes=episodes_before_change, stop_at_convergence=False
+    )
+    if model_name == "Dyna-Q":
+        train_kwargs["n_planning"] = n_planning
+        
+    _, _, _, _, metrics_before = model.train(**train_kwargs)
+
+    # --- Benchmark: Value Iteration (Static) ---
+    vi_model_static = models.ValueIterationModel(Maze(dynamic_game1.maze.copy()))
+    vi_model_static.train(discount=0.9)
+    print("Showing optimal path (Value Iteration) - Original Maze:")
+    maze_vi1 = Maze(dynamic_game1.maze.copy())
+    maze_vi1.render(Render.MOVES)
+    maze_vi1.play(vi_model_static, start_cell=(0, 0))
+    
+
+    # --- Phase 2: Change Maze Environment ---
+    print(f"\n--- Phase 2: Changing Maze Environment for {model_name} ---")
+    model.environment = Maze(comparison_maze_dynamic.copy())
+
+    # --- Phase 3: Train on dynamic maze ---
+    print(f"\n--- Phase 3: Continuing training for {model_name} on Changed Maze ---")
+    
+    train_kwargs = dict(
+        discount=0.9, exploration_rate=0.1, learning_rate=0.1,
+        episodes=episodes_after_change, stop_at_convergence=False
+    )
+    if model_name == "Dyna-Q":
+        train_kwargs["n_planning"] = n_planning
+
+    _, _, _, _, metrics_after = model.train(**train_kwargs)
+    
+    # --- [FIXED BLOCK] Show the model's path on the new maze ---
+    print(f"\n--- Showing {model_name}'s learned path on Changed Maze ---")
+    # Use the model's own environment, which it was just trained on
+    model.environment.render(Render.MOVES)
+    model.environment.play(model, start_cell=(0, 0))
+    # --- End of fix ---
+
+    # --- Benchmark: Value Iteration (Dynamic) ---
+    vi_model_dynamic = models.ValueIterationModel(Maze(comparison_maze_dynamic.copy()))
+    vi_model_dynamic.train(discount=0.9)
+    print("Showing optimal path (Value Iteration) - Changed Maze:")
+    maze_vi_dynamic = Maze(comparison_maze_dynamic.copy())
+    maze_vi_dynamic.render(Render.MOVES)
+    maze_vi_dynamic.play(vi_model_dynamic, start_cell=(0, 0))
+    
+    print("Showing static VI model failure on Changed Maze:")
+    maze_vi_fail = Maze(comparison_maze_dynamic.copy())
+    maze_vi_fail.render(Render.MOVES)
+    maze_vi_fail.play(vi_model_static, start_cell=(0, 0)) # Show static model failing
+
+    # --- Phase 4: Process and Plot Metrics ---
+    for m in metrics_after:
+        m["episode"] += episodes_before_change
+    metrics_all = metrics_before + metrics_after
+
+    # Helper for smoothing
+    def roll(y, w=25):
+        if len(y) < w:
+            return y
+        y = np.asarray(y, float)
+        return np.convolve(y, np.ones(w)/w, mode='valid')
+
+    # Plot Returns
+    plt.figure(figsize=(12, 8))
+    episodes = [m["episode"] for m in metrics_all]
+    returns = [m["return_"] for m in metrics_all]
+    
+    # Plot smoothed data
+    smoothed_returns = roll(returns)
+    start_idx = len(episodes) - len(smoothed_returns)
+    plt.plot(episodes[start_idx:], smoothed_returns, label=f"{model_name} (smoothed)")
+    plt.plot(episodes, returns, label=f"{model_name} (raw)", alpha=0.3) # Add raw plot
+
+    plt.axvline(episodes_before_change, color='red', linestyle='--', label="Maze Changed")
+    plt.xlabel("Episode")
+    plt.ylabel("Return")
+    plt.title(f"{model_name}: Total Rewards on Dynamic Maze")
+    plt.legend()
+
+    # Plot Steps
+    plt.figure(figsize=(12, 8))
+    steps = [m["steps"] for m in metrics_all]
+
+    # Plot smoothed data
+    smoothed_steps = roll(steps)
+    start_idx = len(episodes) - len(smoothed_steps)
+    plt.plot(episodes[start_idx:], smoothed_steps, label=f"{model_name} (smoothed)")
+    plt.plot(episodes, steps, label=f"{model_name} (raw)", alpha=0.3) # Add raw plot
+
+    plt.axvline(episodes_before_change, color='red', linestyle='--', label="Maze Changed")
+    plt.xlabel("Episode")
+    plt.ylabel("Steps Taken")
+    plt.title(f"{model_name}: Steps Taken on Dynamic Maze")
+    plt.legend()
+    
+    plt.show()
+
+# --- NEW: Individual Dynamic Test Blocks ---
+
+if test == Test.Q_LEARNING_DYNAMIC:
+    run_dynamic_test(models.QTable2CModel, "Q-Learning")
+
+if test == Test.DYNA_Q_DYNAMIC:
+    run_dynamic_test(models.DynaQModel, "Dyna-Q", n_planning=30)
+
+if test == Test.SARSA_DYNAMIC:
+    run_dynamic_test(models.SarsaTableModel, "SARSA")
+
+if test == Test.Q_TRACE_DYNAMIC:
+    run_dynamic_test(models.QTableTraceModel, "Q-Learning (Trace)")
+
+if test == Test.SARSA_TRACE_DYNAMIC:
+    run_dynamic_test(models.SarsaTableTraceModel, "SARSA (Trace)")
+
+
+# Dynamic Maze setup for ALL models (REMOVED)
+# if test == Test.ALL_MODELS_DYNAMIC_TEST:
+#     ... (code block removed) ...
+
+
 ## --------------------------------
+
+# List of all comparison tests that handle their own plotting
+comparison_tests = [
+    Test.DYNA_Q_VS_QL_STATIC, 
+    Test.DYNA_Q_VS_QL_DYNAMIC, 
+    Test.Q_LEARNING_DYNAMIC,
+    Test.DYNA_Q_DYNAMIC,
+    Test.SARSA_DYNAMIC,
+    Test.Q_TRACE_DYNAMIC,
+    Test.SARSA_TRACE_DYNAMIC
+]
 
 # draw graphs showing development of win rate and cumulative rewards
 try:
     h  # force a NameError exception if h does not exist, and thus don't try to show win rate and cumulative reward
-    fig, (ax1, ax2) = plt.subplots(2, 1, tight_layout=True)
-    fig.canvas.manager.set_window_title(model.name)
-    if w:
-        ax1.plot(*zip(*w))
-        ax1.set_xlabel("episode")
-        ax1.set_ylabel("win rate")
-    else:
-        ax1.set_axis_off()
-        ax1.text(0.5, 0.5, "win rate unavailable", ha="center", va="center", transform=ax1.transAxes)
-    ax2.plot(h)
-    ax2.set_xlabel("episode")
-    ax2.set_ylabel("cumulative reward")
-    plt.show()
+    
+    # Do not show the default plot if running one of the comparison tests
+    if test not in comparison_tests:
+        fig, (ax1, ax2) = plt.subplots(2, 1, tight_layout=True)
+        fig.canvas.manager.set_window_title(model.name)
+        if w:
+            ax1.plot(*zip(*w))
+            ax1.set_xlabel("episode")
+            ax1.set_ylabel("win rate")
+        else:
+            ax1.set_axis_off()
+            ax1.text(0.5, 0.5, "win rate unavailable", ha="center", va="center", transform=ax1.transAxes)
+        ax2.plot(h)
+        ax2.set_xlabel("episode")
+        ax2.set_ylabel("cumulative reward")
+        plt.show()
 except NameError:
     pass
 
-game.render(Render.MOVES)
-game.play(model, start_cell=(4, 1))
+# Do not run the final "play" if running a comparison test
+if test not in comparison_tests:
+    try:
+        game.render(Render.MOVES)
+        game.play(model, start_cell=(4, 1))
+    except NameError:
+        pass # model was not defined, e.g. for SHOW_MAZE_ONLY
 
 plt.show()  # must be placed here else the image disappears immediately at the end of the program
