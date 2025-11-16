@@ -1,5 +1,66 @@
 Note: originally forked from https://github.com/erikdelange/Reinforcement-Learning-Maze
 
+
+# RL-Maze-Solver for CSCI323 Modern AI Group Assignment
+
+Goal of this setup is to evaluate the different algorithms learning efficiency, and adaptability to dynamic maze setups. It is extended from https://github.com/erikdelange/Reinforcement-Learning-Maze.
+
+## Algorithms actually implemented/edited by us:
+- **Value Iteration (VI)** value_iteration.py - model-based algorithm  (Done by Calvin)
+- **Breadth-first search (BFS)** bfs.py - baseline to compute optimal steps for comparison
+- **Dyna-Q** dynaq.py - hybrid approach combining model-based & model-free, adapted from Reinforcement Learning: An Intro by Sutton & Barto (2015). (Done by Jia Rong)
+- **Dyna-Q+** dynaqplus.py - hybrid approach combining model-based & model-free with added time-based exploration bonus, adapted from Reinforcement Learning: An Intro by Sutton & Barto (2015). (Done by Jia Rong)
+- **Q-learning edited** qtable2comparison.py - edited Q-learning code so that metrics can be compared fairly with Dyna-Q (Done by Jia Rong)
+
+## Scenarios Tested
+- Static Maze (Q-Learning vs Dyna-Q) - baseline learning efficiency test for algorithms (Done by Jia Rong)
+- Dynamic Blocking Maze adapted from Sutton & Barto (2015) - to evaluate if algorithms can adapt when new obstacles block the optimal path (Done by Jia Rong)
+- Dynamic Shortcut Maze adapted from Sutton & Barto (2015) - to evaluate if algorithms can adapt when new shortcut appears(Done by Jia Rong)
+- Multi-Phase Dynamic Maze (combines essence of blocking and shortcut maze) - evaluate adaptability of algorithms to a continuous changing environment (Done by Jia Rong)
+
+## Environment Setup
+
+### Prerequisites 
+- Python version used: 3.10
+- IDE used: VSCode
+
+## Install dependencies
+pip install numpy matplotlib pandas
+
+# Run the experiments:
+
+All experiments are defined in main.py. To run the experiments, simply find the variable test = Test.MULTI_PHASE_TESTING in main.py and change the variable after 'Test.' to below named variables.
+
+1. Static Maze Experiment
+test = Test.DYNA_Q_VS_QL_STATIC
+
+2. Dynamic Blocking Maze (Q-Learning vs Dyna-Q)
+test = Test.DYNA_Q_VS_QL_DYNAMIC
+
+3. Dynamic Blocking Maze (Q-Learning vs Dyna-Q vs Dyna-Q+)
+test = Test.DYNA_Q_PLUS_BLOCKING
+
+4. Dynamic Shortcut Maze (Q-Learning vs Dyna-Q)
+test = Test.DYNA_Q_SHORTCUT
+
+5. Dynamic Shortcut Maze (Q-Learning vs Dyna-Q vs Dyna-Q+)
+test = Test.DYNA_Q_PLUS_SHORTCUT
+
+6. Multi-Phase Dynamic Maze (Q-Learning vs Dyna-Q vs Dyna-Q+)
+test = Test.MULTI_PHASE_TESTING
+
+Blocking and Shortcut maze (Maze B1, B2, S1, S2, S3 from the report) are defined in mazesetup.py. B1 = comparison_maze, B2 = comparison_maze_dynamic, S1-S3 = shortcut_maze1 - shortcut_maze3. (Designed by Jia Rong)
+
+## References
+Sutton, R. S., & Barto, A. G. (2015). Reinforcement Learning: An Introduction (2nd ed.).
+https://web.stanford.edu/class/psych209/Readings/SuttonBartoIPRLBook2ndEd.pdf
+
+
+
+
+
+
+
 ### Escape from a maze using reinforcement learning
 
 ##### Solving an optimization problem using an MDP and TD learning

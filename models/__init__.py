@@ -6,3 +6,4 @@ from .sarsa_trace import *
 from .value_iteration import *
 from .dynaq import * # new
 from .qtable2comparison import * # new
+from .dynaqplus import *
